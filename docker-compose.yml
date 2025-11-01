@@ -35,6 +35,21 @@ services:
       - promnet
     restart: unless-stopped
 
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox
+    hostname: blackbox
+    domainname: prom.lab
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    volumes:
+      - ./blackbox:/etc/blackbox_exporter:ro
+    ports:
+      - "9115:9115"
+    networks:
+      - promnet
+    restart: unless-stopped
+
 networks:
   promnet:
     name: promnet

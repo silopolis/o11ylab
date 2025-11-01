@@ -1,0 +1,35 @@
+modules:
+  # Simple readiness check: success when HTTP 200
+  http_200:
+    prober: http
+    timeout: 1s
+    http:
+      method: GET
+      valid_status_codes: [200]
+      preferred_ip_protocol: "ip4"
+      follow_redirects: false
+      fail_if_ssl: false
+      tls_config:
+        insecure_skip_verify: false
+
+  # End-to-end read path via instant query API.
+  # Success = HTTP 200 AND JSON contains `"status":"success"`.
+  # (The example probes ?query=1 which is always valid.)
+  # If you want to enforce more semantics, add regexes such as "resultType"\s*:\s*"vector" or ensure
+  # "data" exists.
+  prom_instant_query:
+    prober: http
+    timeout: 1s
+    http:
+      method: GET
+      valid_status_codes: [200]
+      headers:
+        Accept: application/json
+      preferred_ip_protocol: "ip4"
+      follow_redirects: false
+      #fail_if_body_json_not_matches_cel:
+      fail_if_body_not_matches_regexp:
+        - '"status"\s*:\s*"success"'
+      tls_config:
+        insecure_skip_verify: false
+

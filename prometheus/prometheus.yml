@@ -35,10 +35,9 @@ rule_files:
   - rules/recording/*.rules.yml
   - rules/alerting/*.rules.yml
 
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
 scrape_configs:
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  # -- Prometheus itself.
   # Ingest own /metrics so you can build SLO/SLA views, capacity dashboards (TSDB, WAL, head block),
   # and query health stats.
   - job_name: "prometheus"
@@ -51,4 +50,59 @@ scrape_configs:
         labels:
           service: "prometheus"
           component: "tsdb"
+
+  - job_name: 'blackbox_exporter'  # collect blackbox exporter's operational metrics.
+    honor_labels: true
+    static_configs:
+      - targets: ['blackbox:9115']
+        labels:
+          service: "prometheus"
+          component: "blackbox"
+
+  # --- Readiness probe: GET /-/ready must return HTTP 200
+  - job_name: "blackbox-prom-ready"
+    metrics_path: /probe
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    params:
+      module: [http_200]   # refers to blackbox.yml module name
+    static_configs:
+      - targets:
+          # Probe the readiness endpoint exposed by Prometheus
+          - "http://prometheus:9090/-/ready"
+        labels:
+          service: "prometheus"
+          probe: "ready"
+    relabel_configs:
+      # Pass the real target URL to the blackbox exporter as the 'target' param
+      - source_labels: [__address__]
+        target_label: __param_target
+      # Preserve the probed URL as a label on the resulting metrics
+      - source_labels: [__param_target]
+        target_label: instance            # the *URL* we are probing
+      # Tell Prometheus to scrape the blackbox exporter itself (wherever it runs)
+      - target_label: __address__
+        replacement: "blackbox:9115"        # send the probe to blackbox
+
+  # --- Query API probe: GET /api/v1/query?query=1 should be a successful JSON response
+  - job_name: "blackbox-prom-query"
+    metrics_path: /probe
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    sample_limit: 100
+    params:
+      module: [prom_instant_query]  # defined in blackbox config
+    static_configs:
+      - targets:
+          - "http://prometheus:9090/api/v1/query?query=1"
+        labels:
+          service: "prometheus"
+          probe: "query_api"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: "blackbox:9115"
 

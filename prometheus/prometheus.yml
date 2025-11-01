@@ -1,8 +1,20 @@
 # Global config
 global:
+  # How often to scrape targets by default (override per-job later).
   scrape_interval: 15s
+  # Give scrapes time to finish without overlapping.
+  scrape_timeout: 10s
+  # How often to evaluate recording/alerting rules.
   evaluation_interval: 15s
-  # scrape_timeout is set to the global default (10s).
+
+  # Propagate identity to any remote systems (Thanos/Mimir/Cortex/victoriametrics/etc.)
+  # Used for clean HA deduplication of time series and global routing in remote backends.
+  # Ensure "replica" is unique per Prometheus instance in the same HA pair.
+  external_labels:
+    environment: "dev"
+    cluster: "lab"
+    region: "local"
+    replica: "prom-0"
 
 # Alertmanager configuration
 alerting:
@@ -12,20 +24,31 @@ alerting:
         #- alertmanager:9093
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+# Keep recording rules even if you're deferring alerting; they cut query costs
+# and stabilize dashboards under load. Point at a directory you control.
+# recording rules reduce cardinality and CPU pressure for heavy dashboard queries
+# create high-value aggregations (e.g., per-service rates, SLO windows) so dashboards/alerts don’t
+# stress the TSDB at query time.
+# Load *recording rules* first; add alerting rules later in separate files.
+# Keep rule files small and focused; use globs to allow easy additions.
 rule_files:
-  #- "first_rules.yml"
-  #- "second_rules.yml"
+  - rules/recording/*.rules.yml
+  - rules/alerting/*.rules.yml
 
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  # Ingest own /metrics so you can build SLO/SLA views, capacity dashboards (TSDB, WAL, head block),
+  # and query health stats.
   - job_name: "prometheus"
+    honor_labels: true
     # metrics_path defaults to '/metrics'
     # scheme defaults to 'http'.
     static_configs:
       - targets: ["localhost:9090"]
         # The label name is added as a label `label_name=<label_value>` to any timeseries scraped from this config.
         labels:
-          app: "prometheus"
+          service: "prometheus"
+          component: "tsdb"
 

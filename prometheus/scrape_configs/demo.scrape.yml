@@ -1,0 +1,13 @@
+scrape_configs:
+  - job_name: "promdemo"
+    honor_labels: true
+    static_configs:
+      - targets:
+          - "d1:8080"
+          - "d2:8080"
+          - "d3:8080"
+        # TODO Set component label for each individual target
+        labels:
+          service: "promdemo"
+          probe: "metrics"
+

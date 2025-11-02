@@ -53,6 +53,30 @@ services:
       - promnet
     restart: unless-stopped
 
+  d1:
+    image: julius/prometheus-demo-service:latest
+    container_name: d1
+    hostname: d1
+    domainname: prom.lab
+    networks:
+      - promnet
+
+  d2:
+    image: julius/prometheus-demo-service:latest
+    container_name: d2
+    hostname: d2
+    domainname: prom.lab
+    networks:
+      - promnet
+
+  d3:
+    image: julius/prometheus-demo-service:latest
+    container_name: d3
+    hostname: d3
+    domainname: prom.lab
+    networks:
+      - promnet
+
 networks:
   promnet:
     name: promnet

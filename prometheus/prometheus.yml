@@ -106,3 +106,6 @@ scrape_configs:
       - target_label: __address__
         replacement: "blackbox:9115"
 
+scrape_config_files:
+- scrape_configs/*.scrape.yml
+

@@ -33,6 +33,9 @@ services:
       - "9090:9090"
     networks:
       - promnet
+    extra_hosts:
+      - "host:host-gateway"
+      - "host.prom.lab:host-gateway"
     restart: unless-stopped
 
   blackbox:

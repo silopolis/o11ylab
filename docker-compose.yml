@@ -1,3 +1,7 @@
+networks:
+  promnet:
+    name: promnet
+
 services:
   prometheus:
     image: prom/prometheus:latest
